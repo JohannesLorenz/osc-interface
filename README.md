@@ -1,7 +1,7 @@
 # osc-interface
 A minimal OSC communication interface
 
-## purpose
+## Purpose
 osc-interface is a minimal interface for communication between
 * producers (e.g. instruments like zynaddsubfx)
 * consumers (e.g. DAWs like LMMS)
@@ -36,10 +36,8 @@ The OSC interface works as follows:
 * If the consumer wants to **instantiate a producer**, it calls the virtual
   function `instantiate` of the OscDescriptor subclass, which will return
   a subclass of OscConsumer. The subclass' constructor
-  - must *start* the procuder, e.g. 
-    * allocate memory
-    * initialize variables
-    * start threads
+  - must *start* the procuder, e.g. allocate memory, initialize variables,
+    start threads...
   - after the constructor, the producer must be running as if it has been
     started otherwise
   - if the consumer provides a UI, it shall not be started in the constuctor.
@@ -73,7 +71,7 @@ instuments in LMMS.
   dragged onto consumer's
   - automation patterns
   - controllers
-* The drag type offered by the producers shall be "x-osc-stringpair"
+* The drag type offered by the producers shall be an atom `x-osc-stringpair`
 * If such a drop occurs successfully, the producer saves
   `automatable-model:<ID>:/osc/path/to/element`, where the `<ID>` must be
   - and ID that uniquely identifies the producer inside the consumer
@@ -114,7 +112,7 @@ Message producer to consumer (via TODO):
 * **dnd info** TODO
 * **dnd removal** TODO
 
-## sample implementation
+## Sample implementation
 
 * [LMMS consumer](https://github.com/JohannesLorenz/lmms/tree/osc-plugin/plugins/oscinstrument)
 * [zynaddsubfx producer](https://github.com/zynaddsubfx/zynaddsubfx/tree/osc-plugin/src/Output)
