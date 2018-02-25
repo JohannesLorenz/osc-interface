@@ -48,10 +48,9 @@ The OSC interface works as follows:
   - close any opened UI
 * The **producer provides methods** about
   - how to send messages to it (`sendOsc`)
+  - how to fetch messages from it (`recvOsc`)
   - how to receive audio from it (`runSynth`)
   - how to retreive its audio buffer size (`buffersize`)
-* The **consumer provides methods** about
-  - how to send messages to it (TODO: unspecified yet)
 
 ## Mutexes
 Every function call to a function of the OscInterface function shall be
@@ -83,22 +82,24 @@ instuments in LMMS.
 The following is a sole proposal. It's the currently used standard for OSC
 instuments in LMMS.
 
-Messages consumer to producer (via the `sendOsc` function):
+Messages consumer to producer (written from consumer via `sendOsc`):
 * **save-master:s** Ask the producer to save its savefile into a file specified
-  by the 1st arg. TODO: return value check
+  by the 1st arg.
 * **load-master:s** Ask the producer to load the savefile specified by the 1st
-  arg. TODO: return value check
-* **show-ui:TF** Ask the producer to show or hide its graphical UI, if it has
+  arg.
+* **show-ui:T:F** Ask the producer to show or hide its graphical UI, if it has
   one. If the UI is already open and the argument is `true` or if it is closed
   and the argument is `false`, the producer discards the message.
 * **noteOn:iii** Ask the producer to play a note with
-  - channel <1st arg> (whatever a channel is)
-  - key <2nd arg> (TODO: describe how keys are counted)
-  - velocity <3rd arg> (TODO: describe min, max)
+  - channel (whatever a channel is, it could be a MIDI part)
+  - key (0..127) (69 being the 440 Hz "a" note if no keyshift or detuning
+                  is involved)
+  - velocity (0..127)
 * **noteOff:iii** Ask the producer to stop playing every note
-  - on channel <1st arg>
-  - with key <2nd arg>
-* **dnd-requests** TODO
+  - on channel
+  - with key
+* **connection-info:s** Ask the producer for information about port <1st arg>
+  (useful for requesting metadata after an DnD event)
 * **All other messages** shall
   - either be strictly specified by your used protocol (in the case of this
     proposal: none)
@@ -106,11 +107,19 @@ Messages consumer to producer (via the `sendOsc` function):
     consumer for cases like automation. Such messages shall be handled by
     the producer like regular OSC messages.
 
-Message producer to consumer (via TODO):
-* **save-master** confirmation TODO
-* **load-master** confirmation TODO
-* **dnd info** TODO
-* **dnd removal** TODO
+Message producer to consumer (fetched from consumer via `recvOsc`):
+* **save-master:stT:stF** confirmation of savefile save:
+  - savefile-name
+  - time of when the consumer called "save-master"
+  - whether the savefile was successfully written
+* **load-master:stT:stF** confirmation of savefile load
+* **connection-info:iiic:fffc** Return connection info (either float or int):
+  - step size
+  - min
+  - max
+  - scale-type
+* **connection-removal:s** Information that <1st arg> has been removed from
+  its previous connection
 
 ## Sample implementation
 

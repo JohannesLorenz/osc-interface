@@ -30,6 +30,13 @@ public:
 		unsigned long sample_count) = 0;
 	//! Must send OSC messages to the consumer
 	virtual void sendOsc(const char* port, const char* args, ...) = 0;
+	//! When this is called, the consumer looks for new messages to recv
+	//! The producer must return false if no new messages are available
+	//! The producer must return true if new messages are available and
+	//! can store the first available message in @p msg
+	//! Alternatively, it can set *msg to nullptr, indicating that
+	//! messages were received and already stored in the subclass
+	virtual bool recvOsc(const char** msg) = 0;
 	//! Must return the consumer's used buffersize
 	virtual unsigned long buffersize() const = 0;
 	//! Destructor, must clean up any allocated memory
@@ -44,10 +51,10 @@ public:
 	//! License possibilities
 	enum class license_type
 	{
-		gpl_3_0,  //!< GPL 3.0
-		gpl_2_0,  //!< GPL 2.0
-		lgpl_3_0, //!< LGPL 3.0
-		lgpl_2_1  //!< LGPL 2.1
+		gpl_3_0,  //!< GPL 3.0 or any later
+		gpl_2_0,  //!< GPL 2.0 or any later
+		lgpl_3_0, //!< LGPL 3.0 or any later
+		lgpl_2_1  //!< LGPL 2.1 or any later
 	};
 
 	//! Plugin descriptor which will not change over time
