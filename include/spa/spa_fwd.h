@@ -42,7 +42,6 @@ namespace spa
 	template<class T> class ringbuffer_out;
 
 	class visitor;
-	class spa_visitor; // TODO: one of those two will be removed?
 
 	class plugin;
 	class descriptor;

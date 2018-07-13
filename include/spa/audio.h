@@ -38,6 +38,7 @@
 #include <rtosc/pseudo-rtosc.h>
 
 #include "spa.h"
+#include "audio_fwd.h"
 
 namespace spa {
 namespace audio {
@@ -225,10 +226,10 @@ public:
 	visitor
 */
 
-class spa_audio_visitor : public virtual spa_visitor
+class visitor : public virtual spa::visitor
 {
 public:
-	using spa_visitor::visit;
+	using spa::visitor::visit;
 
 #define SPA_MK_VISIT_AUDIO(type) \
 	SPA_MK_VISIT(control_in<type>, port_ref<const type>) \
@@ -265,8 +266,8 @@ public:
 	accept definitions
 */
 
-#define ACCEPT_SPA_AUDIO(classname) ACCEPT(classname, spa_audio_visitor)
-#define ACCEPT_SPA_AUDIO_T(classname) ACCEPT_T(classname, spa_audio_visitor)
+#define ACCEPT_SPA_AUDIO(classname) ACCEPT(classname, spa::audio::visitor)
+#define ACCEPT_SPA_AUDIO_T(classname) ACCEPT_T(classname, spa::audio::visitor)
 
 namespace stereo {
 	ACCEPT_SPA_AUDIO(in)

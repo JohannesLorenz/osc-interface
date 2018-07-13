@@ -224,7 +224,7 @@ public:
 };
 
 //! use this in every class that you want to make visitable
-#define SPA_OBJECT void accept(class visitor& v) override;
+#define SPA_OBJECT void accept(class spa::visitor& v) override;
 
 //! simple class for small types where copying is cheap
 template<class T>
@@ -395,8 +395,7 @@ public:
 #define SPA_MK_VISIT(type, base) \
 	virtual void visit(type& p) { visit(static_cast<base&>(p)); }
 
-class visitor { public: virtual ~visitor() {} }; // TODO: useless?
-class spa_visitor : public virtual visitor // TODO: rename to visitor?
+class visitor
 {
 public:
 	virtual void visit(port_ref_base& ) {}
@@ -424,21 +423,21 @@ public:
 
 //! define an accept function for a (non-template) class
 #define ACCEPT(classname, visitor_type)\
-	inline void classname::accept(class visitor& v) {\
+	inline void classname::accept(class spa::visitor& v) {\
 		dynamic_cast<visitor_type&>(v).visit(*this);\
 	}
 
 //! define an accept function for a template class
 #define ACCEPT_T(classname, visitor_type)\
 	template<class T>\
-	void classname<T>::accept(class visitor& v) {\
+	void classname<T>::accept(class spa::visitor& v) {\
 		dynamic_cast<visitor_type&>(v).visit(*this);\
 	}
 
-ACCEPT_T(port_ref, spa_visitor)
-ACCEPT(port_ref_base, spa_visitor)
-ACCEPT_T(ringbuffer_in, spa_visitor)
-ACCEPT(ringbuffer_in<char>, spa_visitor)
+ACCEPT_T(port_ref, spa::visitor)
+ACCEPT(port_ref_base, spa::visitor)
+ACCEPT_T(ringbuffer_in, spa::visitor)
+ACCEPT(ringbuffer_in<char>, spa::visitor)
 
 //! Base class for the spa plugin
 class plugin

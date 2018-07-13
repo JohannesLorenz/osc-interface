@@ -45,7 +45,7 @@ class osc_ringbuffer;
 class osc_ringbuffer_in;
 class osc_ringbuffer_out;
 
-class spa_audio_visitor; // TODO: rename
+class visitor;
 
 }
 }

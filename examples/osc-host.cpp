@@ -113,10 +113,10 @@ void osc_host::play(int time)
 	}
 }
 
-struct host_visitor : public virtual spa::audio::spa_audio_visitor
+struct host_visitor : public virtual spa::audio::visitor
 {
 	osc_host* h;
-	using spa_audio_visitor::visit;
+	using spa::audio::visitor::visit;
 
 	// TODO: forbid channel.operator= x ? (use channel class with set method)
 	virtual void visit(spa::audio::in& p) override {
