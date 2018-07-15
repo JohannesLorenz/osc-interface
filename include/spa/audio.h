@@ -46,7 +46,7 @@ namespace audio {
 /*
 	exceptions
 */
-//! an error the plugin *can* throw if the args do not match the port
+//! an error the plugin *can* throw if the OSC args do not match the OSC port
 class invalid_args_error : public error_base
 {
 public:
@@ -125,6 +125,7 @@ enum class scale_type_t
 template<class T>
 class control_in : public virtual port_ref<const T>, public virtual input
 {
+public:
 	SPA_OBJECT
 	scale_type_t scale_type;
 	T min;
@@ -135,6 +136,7 @@ class control_in : public virtual port_ref<const T>, public virtual input
 template<class T>
 class control_out : public virtual port_ref<T>, public virtual input
 {
+public:
 	SPA_OBJECT
 	scale_type_t scale_type;
 	T min;
@@ -239,6 +241,7 @@ public:
 	SPA_MK_VISIT_AUDIO(type) \
 	SPA_MK_VISIT_AUDIO(unsigned type)
 
+	SPA_MK_VISIT_AUDIO(bool)
 	SPA_MK_VISIT_AUDIO2(char)
 	SPA_MK_VISIT_AUDIO2(short)
 	SPA_MK_VISIT_AUDIO2(int)

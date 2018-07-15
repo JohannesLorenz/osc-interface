@@ -64,6 +64,24 @@
     See (hopefully) the examples.
 * What else do I need to take care of when writing a library?
   - At very least, [checklist.md].
+* What do I need to take care of when writing a plugin?
+  - You can assume that the host is always doing everything correctly. You can
+    build failure safe code, but it's not your job. Plugins should be minimal
+    and easy to write.
+* What criterions are there for defining a port as OSC port (e.g. using the
+  OSC ringbuffer for it) vs defining it as LADSPA like port (e.g. ports
+  containing pointers to the data, like `port_ref` ports)?
+  - When to use OSC ports:
+    * When the port structure is too complex
+    * When the number of ports is too high
+    * For event like things that only need to be checked when they occur,
+      or that only require re-computations when they change
+      (e.g. "note-on" would be a candidate, though note there will be a piano port
+       for this case, or e.g. changes to zyn's pad synth that require expensive
+       re-computation)
+  - When to use LADSPA like ports:
+    * When it's easier
+    * When the ports are used more frequently than LFOs (=> runtime matters)
 
 # Troubleshooting
 * I'm getting linker errors, it can not find the descriptor

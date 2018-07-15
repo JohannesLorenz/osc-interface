@@ -41,6 +41,7 @@
 //       * thrown errors that reach plugin and host
 //       must be in your own (version) control, i.e. no STL, boost, libXYZ...
 #include <cstdarg> // only functions for varargs
+#include <stdexcept> // TODO!!
 
 // The same counts for our own libraries!
 #include <ringbuffer/ringbuffer.h>
@@ -408,6 +409,8 @@ public:
 #define SPA_MK_VISIT_PR2(type) SPA_MK_VISIT_PR(type) \
 	SPA_MK_VISIT_PR(unsigned type)
 
+	SPA_MK_VISIT_PR(bool)
+
 	SPA_MK_VISIT_PR2(char)
 	SPA_MK_VISIT_PR2(short)
 	SPA_MK_VISIT_PR2(int)
@@ -487,6 +490,17 @@ public:
 
 	//! Should return an XPM array for a preview logo, or nullptr
 	virtual const char** xpm_load() const { return nullptr; }
+
+	/*
+	 * plugin instance identification inside host
+	 * if none of this is given, a host could still try to use the plugin
+	 * instance pointer for identification
+	 */
+	//! Port for communication, if any. If none, try to provide window_id
+	virtual unsigned net_port() const { return 0; }
+	//! Window ID of the main window of the plugin. Must be unique inside
+	//! your window server environment. For X11: Use the X Window ID.
+	virtual const char* window_id() const { return nullptr; }
 };
 
 //! Base class to let the host provide information without
@@ -589,6 +603,9 @@ public:
 	virtual int version_minor() const { return 0; }
 	virtual int version_patch() const { return 0; }
 
+	/*
+	 * properties
+	 */
 	struct properties
 	{
 		//! plugin has realtime dependency (e.g. hardware device),
