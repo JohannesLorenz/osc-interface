@@ -30,6 +30,7 @@
 #include <iostream>
 #include <dlfcn.h>
 #include <cmath>
+#include <memory>
 #include <spa/audio.h>
 
 class osc_host
@@ -66,7 +67,7 @@ private:
 
 	// for controls where we do not know the meaning (but the user will)
 	std::vector<float> unknown_controls;
-	spa::audio::osc_ringbuffer* rb = nullptr;
+	std::unique_ptr<spa::audio::osc_ringbuffer> rb;
 
 //	std::map<std::string, port_base*> ports;
 };
@@ -142,9 +143,11 @@ struct host_visitor : public virtual spa::audio::visitor
 		std::cout << "ringbuffer input" << std::endl;
 		if(h->rb)
 			throw std::runtime_error("can not handle 2 OSC ports");
-		else
-			p.connect(*(h->rb = new spa::audio::osc_ringbuffer(
-						p.get_size())));
+		else {
+			h->rb.reset(
+				new spa::audio::osc_ringbuffer(p.get_size()));
+			p.connect(*h->rb);
+		}
 	}
 
 	virtual void visit(spa::port_ref<const float>& p) override {
@@ -181,15 +184,17 @@ bool osc_host::init_plugin()
 		 plugin = descriptor->instantiate();
 	}
 
-	const char* portname = "";
-	for(int i = 0; portname; ++i)
+	const spa::simple_vec<spa::simple_str> port_names =
+		descriptor->port_names();
+
+	for(const spa::simple_str& port_name : port_names)
 	{
-		portname = descriptor->get_port_name(i);
-		if(portname)
 		try
 		{
-			std::cout << "portname: " << portname << std::endl;
-			spa::port_ref_base& port_ref = plugin->port(portname);
+			std::cout << "portname: " << port_name.data()
+				  << std::endl;
+			spa::port_ref_base& port_ref =
+				plugin->port(port_name.data());
 
 			// here comes the difficult part:
 			// * what port type is in the plugin?

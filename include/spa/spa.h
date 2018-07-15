@@ -41,7 +41,6 @@
 //       * thrown errors that reach plugin and host
 //       must be in your own (version) control, i.e. no STL, boost, libXYZ...
 #include <cstdarg> // only functions for varargs
-#include <stdexcept> // TODO!!
 
 // The same counts for our own libraries!
 #include <ringbuffer/ringbuffer.h>
@@ -131,29 +130,102 @@ public:
 //! name of the entry function that a host must resolve
 constexpr const char* descriptor_name = "spa_descriptor";
 
+//! Simple vector on heap, without library dependencies
+//! @todo untested
+template<class T>
+class simple_vec
+{
+protected:
+	T* _data = nullptr;
+	unsigned len = 0;
+
+	void mdelete() { delete[] _data; _data = nullptr; }
+
+	static void init(const T* ) noexcept {}
+	template<class First, class ...More>
+	static void init(T* dest, const First& first, const More& ...args)
+		noexcept
+	{
+		*dest = first;
+		init(dest + 1, args...);
+	}
+public:
+	class const_iterator
+	{
+		friend class simple_vec;
+		const T* ptr;
+		const_iterator(const T* ptr) noexcept : ptr(ptr) {}
+	public:
+		bool operator!=(const const_iterator& other) const noexcept {
+			return ptr != other.ptr;
+		}
+		const_iterator& operator++() noexcept { ++ptr; return *this; }
+		const T& operator*() noexcept { return *ptr; }
+		const T& operator->() noexcept { return *ptr; }
+	};
+
+	const_iterator begin() const noexcept { return const_iterator{_data}; }
+	const_iterator end() const noexcept {
+		return const_iterator{_data + len}; }
+
+	//! Return a pointer to the internal byte array, representing the data
+	const T* data() const noexcept { return _data; }
+	//! Return the number of elements
+	unsigned size() const noexcept { return len; }
+	//! Return whether the vector is empty
+	bool empty() const noexcept { return !len; }
+	//! Clear the vector
+	void clear() noexcept { mdelete(); len = 0; }
+	// TODO: write push_back, pop_back
+	//! Return element at position @p idx
+	T& operator[](int idx) noexcept { return _data[idx]; }
+	//! Return element at position @p idx
+	const T& operator[](int idx) const noexcept { return _data[idx]; }
+	//! Return safely element at position @p idx
+	T& at(unsigned idx) noexcept(false)
+	{
+		if(idx > len)
+			throw out_of_range_error(idx, 1+len);
+		else
+			return _data[idx];
+	}
+	//! Return safely element at position @p idx
+	const T& at(unsigned idx) const noexcept(false)
+	{
+		if(idx > len)
+			throw out_of_range_error(idx, 1+len);
+		else
+			return _data[idx];
+	}
+	//! Construct an empty vector. Guaranteed not to alloc
+	simple_vec() noexcept(false) {}
+	template<class ...Args>
+	simple_vec(const Args& ...args) {
+		len = sizeof...(args);
+		_data = new T[len];
+		init(_data, args...);
+	}
+	simple_vec(simple_vec&& other) noexcept {
+		len = other.len;
+		_data = other._data;
+		other.len = 0;
+		other._data = nullptr;
+	}
+	simple_vec(const simple_vec& other) = delete;
+	~simple_vec() noexcept { mdelete(); }
+};
+
 //! Simple string on heap, without library dependencies
 //! @todo untested
-class simple_str
+class simple_str : public simple_vec<char>
 {
-	char* _data = nullptr;
-	unsigned len;
-	char _empty = 0; // TODO: static
-
-	void mdelete() { if(_data != &_empty) delete _data; }
 public:
-	//! Return an a pointer to the internal byte array, representing a
-	//! C style string.
-	const char* data() const noexcept { return _data; }
 	//! Return the number of chars before the final 0 byte
-	unsigned length() const noexcept { return len; }
-	//! Return whether the string is empty
-	bool empty() const noexcept { return !len; }
-	//! Clear the string
-	void clear() noexcept { mdelete(); _data = &_empty; len = 0; }
+	unsigned length() const noexcept { return size() - 1; }
+	//! Construct an empty string
+	simple_str() noexcept(false) {}
 	//! Construct a string, copying @p initial
 	simple_str(const char* initial) noexcept(false) { operator=(initial); }
-	//! Construct an empty string. Guaranteed not to alloc
-	simple_str() noexcept(false) : _data(&_empty), len(0) {}
 	//! Assign this string to be a copy of @p newstr
 	simple_str& operator=(const char* newstr) noexcept(false)
 	{
@@ -164,7 +236,6 @@ public:
 		detail::m_memcpy(_data, newstr, sz);
 		return *this;
 	}
-	~simple_str() noexcept { mdelete(); }
 	//! Append @p rhs.
 	//! @note The internal pointer can change
 	simple_str& operator+=(const char* rhs) noexcept(false) {
@@ -177,27 +248,9 @@ public:
 		len = len + rhslen;
 		return *this;
 	}
-	//! Return character at position @p idx
-	char& operator[](int idx) noexcept { return _data[idx]; }
-	//! Return character at position @p idx
-	const char& operator[](int idx) const noexcept { return _data[idx]; }
-	//! Return safely character at position @p idx
-	char& at(unsigned idx) noexcept(false)
-	{
-		if(idx > len)
-			throw out_of_range_error(idx, 1+len);
-		else
-			return _data[idx];
-	}
-	//! Return safely character at position @p idx
-	const char& at(unsigned idx) const noexcept(false)
-	{
-		if(idx > len)
-			throw out_of_range_error(idx, 1+len);
-		else
-			return _data[idx];
-	}
-
+	simple_str(simple_str&& other) noexcept :
+		simple_vec(std::move(static_cast<simple_vec&>(other))) {}
+	simple_str(const simple_str& other) = delete;
 };
 
 class port_ref_base
@@ -227,7 +280,7 @@ public:
 //! use this in every class that you want to make visitable
 #define SPA_OBJECT void accept(class spa::visitor& v) override;
 
-//! simple class for small types where copying is cheap
+//! class for simple types
 template<class T>
 class port_ref : public virtual port_ref_base
 {
@@ -237,9 +290,8 @@ public:
 
 	// TODO: some of those functions may be useless
 
-	operator T() const { return *ref; }
-	operator const T*() const { return ref; }
-	operator T*() { return ref; }
+	operator T&() { return *ref; }
+	operator const T&() const { return *ref; }
 
 	const port_ref<T>& operator=(const T& value) { return set(value); }
 	const port_ref<T>& set(const T& value) { *ref = value; return *this; }
@@ -365,11 +417,10 @@ public:
 
 			//printf("len: %d\n", +length);
 			if(length && read_space() < length)
-				throw std::runtime_error("char ringbuffer "
+				throw error_base("char ringbuffer "
 					"contains corrupted data");
 			if(max < length)
-				throw std::runtime_error("read buffer too small"
-					"for message");
+				throw out_of_range_error(length, max);
 			else
 			{
 				auto rd = read(length);
@@ -586,18 +637,14 @@ public:
 	//! Desctructor, must clean up any allocated memory
 	virtual ~descriptor() {}
 
-	//! Return a port name. If all are returned, return nullptr.
-	//! If state is 0, the plugin must be careful creating/removing
-	//! new ports until it has returned nullptr
-	//! @todo this generalises a bit bad, use 'port_after(const char*)'
-	//!   or 'const char** port_array'
-	//! @note The plugin must not show all its ports. A good start would be:
-	//!   * cumpolsory ports (e.g. buffer sizes)
-	//!   * ports that have a special meaning to the host and
-	virtual const char* get_port_name(int state) const = 0;
+	//! Return all port names the plugin wants to expose. Must be
+	//! nullptr-terminated.
+	//! There can still be other ports. The host can find them using
+	//! dnd, or if they are in an old-versioned savefile.
+	virtual simple_vec<simple_str> port_names() const = 0;
 
 	//! csv-list of files that can be loaded, e.g. "xmz, xiz"
-	virtual const char* save_filetypes() const { return ""; }
+	virtual const char* savefile_types() const { return ""; }
 
 	virtual int version_major() const { return 0; }
 	virtual int version_minor() const { return 0; }

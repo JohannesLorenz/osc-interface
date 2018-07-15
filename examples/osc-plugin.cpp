@@ -20,8 +20,7 @@
 /**
 	@file osc-plugin.cpp
 	a simple example gain plugin
-	less than 170 LOC, including license and metadata
-	@todo remove the port enum, it's useless
+	less than 150 LOC, including license and metadata
 */
 
 #include <cstring>
@@ -31,14 +30,11 @@
 
 class example_plugin : public spa::plugin
 {
-	//! ports can be extended, this is being hidden from the sourcee
+	//! ports can be extended, this is being hidden from the source
 	struct buffersize_port : public spa::audio::buffersize
 	{
-		//! last value of buffersize before it changed
-		//! usually, there is utils::port_rack to check which ports
-		//! changed,
-		int last;
-		buffersize_port() : last(0) {}
+		int some_extra_value;
+		buffersize_port() : some_extra_value(0) {}
 	};
 
 public:
@@ -66,26 +62,9 @@ public:
 		}
 	}
 
-	struct {
-		std::string operation;
-		std::string file;
-		uint64_t stamp;
-		bool status;
-	} recent;
-
-
 public:	// FEATURE: make these private?
 	virtual ~example_plugin() {}
 	example_plugin() : osc_in(1024) {}
-
-
-	enum port_id
-	{
-		p_in,
-		p_out,
-		p_buffersize,
-		p_osc
-	};
 
 	bool ui_ext() const override { return false; }
 
@@ -136,19 +115,11 @@ public:
 
 	license_type license() const override { return license_type::gpl_3_0; }
 
-	// usually, a std::map/std::vector is better, but let's keep it simple
-	const char* get_port_name(int state) const override
-	{
-		using p = example_plugin;
-		switch(state)
-		{
-			case p::p_in: return "in";
-			case p::p_out: return "out";
-			case p::p_buffersize: return "buffersize";
-			case p::p_osc: return "osc";
-			default: return nullptr;
-		}
+	struct port_names_t { const char** names; };
+	spa::simple_vec<spa::simple_str> port_names() const override {
+		return { "in", "out", "buffersize", "osc" };
 	}
+
 	example_plugin* instantiate() const override {
 		return new example_plugin; }
 };
