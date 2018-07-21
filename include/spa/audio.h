@@ -131,6 +131,10 @@ public:
 	T min;
 	T max;
 	T def;
+	control_in() :
+		scale_type(scale_type_t::linear),
+		min(std::numeric_limits<T>::min()),
+		max(std::numeric_limits<T>::max()) {}
 };
 
 template<class T>
@@ -141,6 +145,10 @@ public:
 	scale_type_t scale_type;
 	T min;
 	T max;
+	control_out() :
+		scale_type(scale_type_t::linear),
+		min(std::numeric_limits<T>::min()),
+		max(std::numeric_limits<T>::max()) {}
 };
 
 class samplerate : public virtual control_in<int> {
